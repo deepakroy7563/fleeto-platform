@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: fleeto-backend
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        fromValue: YOUR_MONGODB_ATLAS_URL_HERE
+      - key: JWT_SECRET
+        fromValue: YOUR_JWT_SECRET_HERE
+      - key: CLOUDINARY_CLOUD_NAME
+        fromValue: YOUR_CLOUDINARY_CLOUD_NAME
+      - key: CLOUDINARY_API_KEY
+        fromValue: YOUR_CLOUDINARY_API_KEY
+      - key: CLOUDINARY_API_SECRET
+        fromValue: YOUR_CLOUDINARY_API_SECRET
+      - key: FRONTEND_URL
+        fromValue: YOUR_VERCEL_FRONTEND_URL_HERE

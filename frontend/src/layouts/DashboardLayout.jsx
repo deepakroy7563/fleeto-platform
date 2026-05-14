@@ -76,6 +76,9 @@ const DashboardLayout = () => {
         </div>
 
         <nav className="flex-grow px-4 mt-6 space-y-2">
+          <div className={`px-4 mb-4 text-[10px] font-black uppercase tracking-widest text-gray-500 ${!isSidebarOpen && 'hidden'}`}>
+            {user?.role === 'admin' ? 'Administration' : 'Dealer Panel'}
+          </div>
           {navItems.map((item) => (
             <Link
               key={item.name}

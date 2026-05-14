@@ -8,6 +8,7 @@ import DealerDashboard from './pages/dashboard/DealerDashboard'
 import DashboardLayout from './layouts/DashboardLayout'
 import DashboardOverview from './pages/dashboard/DashboardOverview'
 import ManageBikes from './pages/dashboard/ManageBikes'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import ManageDealers from './pages/admin/ManageDealers'
 import ManageUsers from './pages/admin/ManageUsers'
 import Contact from './pages/Contact'
@@ -59,7 +60,7 @@ function App() {
         
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="admin" element={<DashboardLayout />}>
-            <Route index element={<DashboardOverview />} />
+            <Route index element={<AdminDashboard />} />
             <Route path="users" element={<ManageUsers />} />
             <Route path="dealers" element={<ManageDealers />} />
             <Route path="bikes" element={<ManageBikes />} />

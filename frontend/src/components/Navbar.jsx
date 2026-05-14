@@ -63,7 +63,9 @@ const Navbar = () => {
                     }`}
                   >
                     <UserIcon className="h-4 w-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{user?.name?.split(' ')[0]}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      {user?.role === 'admin' ? 'Admin Panel' : user?.role === 'dealer' ? 'Dashboard' : 'Profile'}
+                    </span>
                   </Link>
                   <button 
                     onClick={() => dispatch(logout())}

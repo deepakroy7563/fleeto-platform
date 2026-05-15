@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, Menu, X, User as UserIcon } from 'lucide-react'
+import { Zap, Menu, X, User as UserIcon, ShieldAlert } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSelector, useDispatch } from 'react-redux'
@@ -16,8 +16,10 @@ const Navbar = () => {
     { name: 'Bikes', path: '/bikes' },
     { name: 'Spare Parts', path: '/parts' },
     { name: 'Find Dealer', path: '/find-dealer' },
+    { name: 'Admin Panel', path: '/admin' },
     { name: 'Contact', path: '/contact' },
   ]
+
 
   const isActive = (path) => location.pathname === path
 
@@ -54,17 +56,31 @@ const Navbar = () => {
               
               {isAuthenticated ? (
                 <div className="flex items-center space-x-6 border-l border-white/10 pl-8 ml-8">
+                  {user?.role === 'admin' && (
+                    <Link 
+                      to="/admin"
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all ${
+                        location.pathname.includes('/admin') 
+                        ? 'bg-red-500 text-white' 
+                        : 'bg-red-500/20 text-red-500 hover:bg-red-500/30'
+                      }`}
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Admin Hub</span>
+                    </Link>
+                  )}
+
                   <Link 
-                    to={user?.role === 'admin' ? '/admin' : user?.role === 'dealer' ? '/dashboard' : '/profile'}
+                    to={user?.role === 'dealer' ? '/dashboard' : '/profile'}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all ${
-                      location.pathname.includes('/dashboard') || location.pathname === '/profile' || location.pathname.includes('/admin')
+                      (location.pathname.includes('/dashboard') || location.pathname === '/profile') && !location.pathname.includes('/admin')
                       ? 'bg-electricGreen text-black' 
                       : 'bg-white/5 text-white hover:bg-white/10'
                     }`}
                   >
                     <UserIcon className="h-4 w-4" />
                     <span className="text-[10px] font-black uppercase tracking-widest">
-                      {user?.role === 'admin' ? 'Admin Panel' : user?.role === 'dealer' ? 'Dashboard' : 'Profile'}
+                      {user?.role === 'dealer' ? 'Dashboard' : 'Profile'}
                     </span>
                   </Link>
                   <button 
@@ -120,14 +136,24 @@ const Navbar = () => {
               <div className="pt-4 mt-4 border-t border-white/5">
                 {isAuthenticated ? (
                   <div className="space-y-2">
-                    <Link
-                      to={user?.role === 'admin' ? '/admin' : user?.role === 'dealer' ? '/dashboard' : '/profile'}
-                      onClick={() => setIsOpen(false)}
-                      className="bg-white/5 text-white flex items-center justify-between px-6 py-5 rounded-2xl text-sm font-black uppercase tracking-widest"
-                    >
-                      <span>{user?.name}</span>
-                      <UserIcon className="h-5 w-5 text-electricGreen" />
-                    </Link>
+                      {user?.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsOpen(false)}
+                          className="bg-red-500/10 text-red-500 flex items-center justify-between px-6 py-5 rounded-2xl text-sm font-black uppercase tracking-widest"
+                        >
+                          <span>Admin Hub</span>
+                          <ShieldAlert className="h-5 w-5" />
+                        </Link>
+                      )}
+                      <Link
+                        to={user?.role === 'dealer' ? '/dashboard' : '/profile'}
+                        onClick={() => setIsOpen(false)}
+                        className="bg-white/5 text-white flex items-center justify-between px-6 py-5 rounded-2xl text-sm font-black uppercase tracking-widest"
+                      >
+                        <span>{user?.role === 'dealer' ? 'Dashboard' : 'Profile'}</span>
+                        <UserIcon className="h-5 w-5 text-electricGreen" />
+                      </Link>
                     <button
                       onClick={() => {
                         dispatch(logout())

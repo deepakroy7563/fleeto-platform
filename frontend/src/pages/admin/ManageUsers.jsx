@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { User, Trash2, Shield, UserCheck, Search, Filter, Loader2 } from 'lucide-react'
+import { User, Trash2, Shield, UserCheck, Search, Filter, Loader2, CheckCircle, Clock, XCircle } from 'lucide-react'
 import api from '../../services/api'
 import { motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
@@ -23,6 +23,19 @@ const ManageUsers = () => {
       toast.error('Failed to fetch users')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const toggleApproval = async (id, currentStatus) => {
+    try {
+      const res = await api.put(`/users/${id}/status`, { isApproved: !currentStatus })
+      if (res.data.success) {
+        setUsers(users.map(u => u._id === id ? { ...u, isApproved: !currentStatus } : u))
+        toast.success(`User ${!currentStatus ? 'approved' : 'revoked'} successfully`)
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Action failed')
     }
   }
 
@@ -80,6 +93,7 @@ const ManageUsers = () => {
                 <th className="p-6">User</th>
                 <th className="p-6">Role</th>
                 <th className="p-6">Registration</th>
+                <th className="p-6">Status</th>
                 <th className="p-6 text-right">Actions</th>
               </tr>
             </thead>
@@ -116,8 +130,40 @@ const ManageUsers = () => {
                       </span>
                     </td>
                     <td className="p-6 text-sm text-gray-400">{new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td className="p-6">
+                      {user.role !== 'admin' ? (
+                        user.isApproved ? (
+                          <span className="flex items-center space-x-2 text-green-500 text-[9px] font-black uppercase tracking-widest bg-green-500/10 px-3 py-1 rounded-full w-fit">
+                            <CheckCircle className="h-3 w-3" />
+                            <span>Verified</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center space-x-2 text-yellow-500 text-[9px] font-black uppercase tracking-widest bg-yellow-500/10 px-3 py-1 rounded-full w-fit">
+                            <Clock className="h-3 w-3" />
+                            <span>Pending</span>
+                          </span>
+                        )
+                      ) : (
+                        <span className="flex items-center space-x-2 text-blue-500 text-[9px] font-black uppercase tracking-widest bg-blue-500/10 px-3 py-1 rounded-full w-fit">
+                          <Shield className="h-3 w-3" />
+                          <span>System</span>
+                        </span>
+                      )}
+                    </td>
                     <td className="p-6 text-right">
                       <div className="flex items-center justify-end space-x-3">
+                        {user.role !== 'admin' && (
+                          <button 
+                            onClick={() => toggleApproval(user._id, user.isApproved)}
+                            className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${
+                              user.isApproved 
+                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white' 
+                                : 'bg-electricGreen text-black hover:bg-electricGreen/90'
+                            }`}
+                          >
+                            {user.isApproved ? 'Revoke' : 'Approve'}
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleDelete(user._id)}
                           className="p-2 hover:bg-red-500/10 rounded-lg text-gray-500 hover:text-red-500 transition-colors"

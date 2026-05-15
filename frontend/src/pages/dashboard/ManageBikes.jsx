@@ -40,7 +40,7 @@ const ManageBikes = () => {
 
   const fetchBikes = async () => {
     try {
-      const res = await api.get(`/bikes?dealer=${user.id}`)
+      const res = await api.get(user.role === 'dealer' ? `/bikes?dealer=${user.id}` : '/bikes')
       setBikes(res.data.data)
     } catch (err) {
       console.error(err)
@@ -107,16 +107,22 @@ const ManageBikes = () => {
     <div className="p-8">
       <div className="flex justify-between items-center mb-10">
         <div>
-          <h1 className="text-2xl font-black uppercase">Manage Inventory</h1>
-          <p className="text-gray-500 text-sm font-bold">Add and manage your electric bike models.</p>
+          <h1 className="text-2xl font-black uppercase">
+            {user.role === 'admin' ? 'Global Fleet Inventory' : 'Manage Inventory'}
+          </h1>
+          <p className="text-gray-500 text-sm font-bold">
+            {user.role === 'admin' ? 'Viewing all electric bikes registered on the platform.' : 'Add and manage your electric bike models.'}
+          </p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="bg-electricGreen text-black font-black px-8 py-4 rounded-2xl flex items-center space-x-3 hover:scale-105 transition-transform"
-        >
-          <Plus className="h-5 w-5" />
-          <span>ADD NEW MODEL</span>
-        </button>
+        {user.role === 'dealer' && (
+          <button 
+            onClick={() => setShowModal(true)}
+            className="bg-electricGreen text-black font-black px-8 py-4 rounded-2xl flex items-center space-x-3 hover:scale-105 transition-transform"
+          >
+            <Plus className="h-5 w-5" />
+            <span>ADD NEW MODEL</span>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -137,16 +143,25 @@ const ManageBikes = () => {
               <div className="text-2xl font-black mb-6">₹{bike.price.toLocaleString()}</div>
               
               <div className="flex items-center space-x-2">
-                <button className="flex-grow flex items-center justify-center space-x-2 bg-white bg-opacity-5 hover:bg-opacity-10 p-3 rounded-xl transition-all">
-                  <Edit className="h-4 w-4" />
-                  <span className="text-xs font-bold">Edit</span>
-                </button>
-                <button 
-                  onClick={() => handleDelete(bike._id)}
-                  className="p-3 bg-red-500 bg-opacity-10 text-red-500 hover:bg-opacity-20 rounded-xl transition-all"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {user.role === 'dealer' && (
+                  <>
+                    <button className="flex-grow flex items-center justify-center space-x-2 bg-white bg-opacity-5 hover:bg-opacity-10 p-3 rounded-xl transition-all">
+                      <Edit className="h-4 w-4" />
+                      <span className="text-xs font-bold">Edit</span>
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(bike._id)}
+                      className="p-3 bg-red-500 bg-opacity-10 text-red-500 hover:bg-opacity-20 rounded-xl transition-all"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+                {user.role === 'admin' && (
+                   <div className="flex-grow text-[10px] font-black uppercase text-gray-600 bg-white/5 p-3 rounded-xl text-center">
+                     Dealer ID: {bike.dealer?.name || bike.dealer}
+                   </div>
+                )}
                 <Link to={`/bikes/${bike._id}`} className="p-3 bg-blue-500 bg-opacity-10 text-blue-500 hover:bg-opacity-20 rounded-xl transition-all">
                   <ExternalLink className="h-4 w-4" />
                 </Link>

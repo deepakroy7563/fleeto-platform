@@ -5,7 +5,9 @@ import {
   logout, 
   getProfile, 
   updateProfile,
-  updateAvatar 
+  updateAvatar,
+  forgotPassword,
+  resetPassword 
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
@@ -21,5 +23,7 @@ router
   .put(protect, updateProfile);
 
 router.put('/avatar', protect, upload.single('avatar'), updateAvatar);
+router.post('/forgotpassword', forgotPassword);
+router.put('/resetpassword/:resettoken', resetPassword);
 
 export default router;

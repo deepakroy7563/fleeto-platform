@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Zap, ShoppingBag, MessageSquare, Plus, Edit, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react'
 import api from '../../services/api'
 import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 
 const DealerDashboard = () => {
   const { user } = useSelector((state) => state.auth)
@@ -16,7 +17,7 @@ const DealerDashboard = () => {
       try {
         const [bookingsRes, bikesRes] = await Promise.all([
           api.get('/bookings'),
-          api.get(`/bikes?dealer=${user.id}`)
+          user.role === 'dealer' ? api.get(`/bikes?dealer=${user.id}`) : api.get('/bikes')
         ])
         setBookings(bookingsRes.data.data)
         setBikes(bikesRes.data.data)
@@ -50,23 +51,31 @@ const DealerDashboard = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-3xl font-black uppercase">Dealer Dashboard</h1>
-            <p className="text-gray-500 font-bold">Welcome back, {user.agencyName || user.name}</p>
+            <h1 className="text-3xl font-black uppercase">
+              {user.role === 'admin' ? 'Global Bookings' : 'Dealer Dashboard'}
+            </h1>
+            <p className="text-gray-500 font-bold">
+              {user.role === 'admin' ? 'Managing all platform inquiries' : `Welcome back, ${user.agencyName || user.name}`}
+            </p>
           </div>
-          <button className="bg-electricGreen text-black font-black px-6 py-3 rounded-xl flex items-center space-x-2 hover:scale-105 transition-transform">
-            <Plus className="h-5 w-5" />
-            <span>ADD NEW BIKE</span>
-          </button>
-          <Link to="/profile?autoLocate=true" className="ml-4 bg-white/5 text-white border border-white/10 font-black px-6 py-3 rounded-xl flex items-center space-x-2 hover:bg-white/10 transition-all">
-            <Edit className="h-5 w-5 text-electricGreen" />
-            <span>MANAGE LOCATION</span>
-          </Link>
+          {user.role === 'dealer' && (
+            <div className="flex space-x-4">
+              <button className="bg-electricGreen text-black font-black px-6 py-3 rounded-xl flex items-center space-x-2 hover:scale-105 transition-transform">
+                <Plus className="h-5 w-5" />
+                <span>ADD NEW BIKE</span>
+              </button>
+              <Link to="/profile?autoLocate=true" className="bg-white/5 text-white border border-white/10 font-black px-6 py-3 rounded-xl flex items-center space-x-2 hover:bg-white/10 transition-all">
+                <Edit className="h-5 w-5 text-electricGreen" />
+                <span>MANAGE LOCATION</span>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {[
-            { label: 'Total Bikes', value: stats.bikes, icon: <Zap />, color: 'text-blue-500' },
+            { label: user.role === 'admin' ? 'Total Fleet' : 'Total Bikes', value: stats.bikes, icon: <Zap />, color: 'text-blue-500' },
             { label: 'Total Bookings', value: stats.bookings, icon: <MessageSquare />, color: 'text-electricGreen' },
             { label: 'Spare Parts', value: stats.parts, icon: <ShoppingBag />, color: 'text-purple-500' },
           ].map((stat, idx) => (
@@ -114,8 +123,15 @@ const DealerDashboard = () => {
                     </td>
                     <td className="p-6">
                       <div className="flex items-center space-x-3">
-                        <button onClick={() => updateStatus(booking._id, 'completed')} className="text-gray-500 hover:text-electricGreen"><CheckCircle className="h-5 w-5" /></button>
-                        <button onClick={() => updateStatus(booking._id, 'cancelled')} className="text-gray-500 hover:text-red-500"><XCircle className="h-5 w-5" /></button>
+                        {user.role === 'dealer' && (
+                          <>
+                            <button onClick={() => updateStatus(booking._id, 'completed')} className="text-gray-500 hover:text-electricGreen" title="Complete"><CheckCircle className="h-5 w-5" /></button>
+                            <button onClick={() => updateStatus(booking._id, 'cancelled')} className="text-gray-500 hover:text-red-500" title="Cancel"><XCircle className="h-5 w-5" /></button>
+                          </>
+                        )}
+                        {user.role === 'admin' && (
+                           <div className="text-[10px] text-gray-600 font-bold uppercase">View Only</div>
+                        )}
                       </div>
                     </td>
                   </tr>

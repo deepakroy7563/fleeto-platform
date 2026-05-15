@@ -169,6 +169,14 @@ const Auth = ({ mode = 'login' }) => {
             />
           </div>
 
+          {mode === 'login' && (
+            <div className="text-right">
+              <Link to="/forgot-password" title="Forgot Password" className="text-xs text-gray-500 hover:text-electricGreen font-bold transition-colors">
+                Forgot Password?
+              </Link>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}

@@ -53,7 +53,75 @@ const ManageDealers = () => {
         <p className="text-gray-500 text-sm font-bold">Review and authorize new bike agencies on the platform.</p>
       </div>
 
-      <div className="glass-panel rounded-3xl overflow-hidden border border-white border-opacity-5">
+      {/* Mobile Card Grid Layout */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {dealers.length === 0 ? (
+          <div className="glass-panel p-10 text-center text-gray-500 font-bold uppercase text-xs rounded-2xl">
+            No dealers found
+          </div>
+        ) : (
+          dealers.map((dealer) => (
+            <div 
+              key={dealer._id} 
+              className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col space-y-4 hover:border-white/10 transition-colors"
+            >
+              {/* Agency Info */}
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 bg-electricGreen bg-opacity-10 rounded-xl flex items-center justify-center text-electricGreen shrink-0">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div className="overflow-hidden">
+                  <div className="font-bold text-base text-white truncate">{dealer.agencyName || 'N/A'}</div>
+                  <div className="text-xs text-gray-400 truncate">{dealer.email}</div>
+                </div>
+              </div>
+
+              {/* Attributes Grid */}
+              <div className="grid grid-cols-2 gap-4 py-3 border-y border-white/5">
+                <div>
+                  <div className="text-[10px] text-gray-500 font-black uppercase tracking-wider mb-1">Owner</div>
+                  <div className="text-sm font-bold text-white truncate">{dealer.name}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500 font-black uppercase tracking-wider mb-1">Joined</div>
+                  <div className="text-xs text-gray-300 font-bold">{new Date(dealer.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              {/* Status and Action Row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  {dealer.isApproved ? (
+                    <span className="flex items-center space-x-1.5 text-green-500 text-[9px] font-black uppercase tracking-widest bg-green-500/10 px-2.5 py-1 rounded-full w-fit">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Verified</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center space-x-1.5 text-yellow-500 text-[9px] font-black uppercase tracking-widest bg-yellow-500/10 px-2.5 py-1 rounded-full w-fit">
+                      <Clock className="h-3 w-3" />
+                      <span>Pending</span>
+                    </span>
+                  )}
+                </div>
+
+                <button 
+                  onClick={() => toggleApproval(dealer._id, dealer.isApproved)}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                    dealer.isApproved 
+                      ? 'bg-red-500 bg-opacity-10 text-red-500 hover:bg-red-500 hover:text-white' 
+                      : 'bg-electricGreen text-black hover:bg-electricGreen/90'
+                  }`}
+                >
+                  {dealer.isApproved ? 'Revoke' : 'Approve'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table Layout */}
+      <div className="hidden md:block glass-panel rounded-3xl overflow-hidden border border-white border-opacity-5">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>

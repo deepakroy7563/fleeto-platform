@@ -85,7 +85,102 @@ const ManageUsers = () => {
         </div>
       </div>
 
-      <div className="glass-panel rounded-3xl overflow-hidden border border-white border-opacity-5">
+      {/* Mobile Card Grid Layout */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {filteredUsers.length === 0 ? (
+          <div className="glass-panel p-10 text-center text-gray-500 font-bold uppercase text-xs rounded-2xl">
+            No users found
+          </div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div 
+              key={user._id} 
+              className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col space-y-4 hover:border-white/10 transition-colors"
+            >
+              {/* User Avatar and Primary Info */}
+              <div className="flex items-center space-x-4">
+                {user.avatar?.url ? (
+                  <img src={user.avatar.url} alt={user.name} className="h-12 w-12 rounded-full object-cover border border-white/10 shrink-0" />
+                ) : (
+                  <div className="h-12 w-12 bg-white/5 rounded-full flex items-center justify-center font-black text-sm shrink-0 border border-white/5">
+                    {user.name[0]}
+                  </div>
+                )}
+                <div className="overflow-hidden">
+                  <div className="font-bold text-base text-white truncate">{user.name}</div>
+                  <div className="text-xs text-gray-400 truncate">{user.email}</div>
+                </div>
+              </div>
+
+              {/* User Metadata Grid */}
+              <div className="grid grid-cols-2 gap-4 py-3 border-y border-white/5">
+                <div>
+                  <div className="text-[10px] text-gray-500 font-black uppercase tracking-wider mb-1">Role</div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                    user.role === 'admin' ? 'bg-red-500/20 text-red-500' :
+                    user.role === 'dealer' ? 'bg-electricGreen/20 text-electricGreen' :
+                    'bg-blue-500/20 text-blue-500'
+                  }`}>
+                    {user.role}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500 font-black uppercase tracking-wider mb-1">Registered</div>
+                  <div className="text-xs text-gray-300 font-bold">{new Date(user.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              {/* Status and Action Buttons */}
+              <div className="flex items-center justify-between">
+                <div>
+                  {user.role !== 'admin' ? (
+                    user.isApproved ? (
+                      <span className="flex items-center space-x-1.5 text-green-500 text-[9px] font-black uppercase tracking-widest bg-green-500/10 px-2.5 py-1 rounded-full w-fit">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Verified</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center space-x-1.5 text-yellow-500 text-[9px] font-black uppercase tracking-widest bg-yellow-500/10 px-2.5 py-1 rounded-full w-fit">
+                        <Clock className="h-3 w-3" />
+                        <span>Pending</span>
+                      </span>
+                    )
+                  ) : (
+                    <span className="flex items-center space-x-1.5 text-blue-500 text-[9px] font-black uppercase tracking-widest bg-blue-500/10 px-2.5 py-1 rounded-full w-fit">
+                      <Shield className="h-3 w-3" />
+                      <span>System</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  {user.role !== 'admin' && (
+                    <button 
+                      onClick={() => toggleApproval(user._id, user.isApproved)}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                        user.isApproved 
+                          ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white' 
+                          : 'bg-electricGreen text-black hover:bg-electricGreen/90'
+                      }`}
+                    >
+                      {user.isApproved ? 'Revoke' : 'Approve'}
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => handleDelete(user._id)}
+                    className="p-2 bg-white/5 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table Layout */}
+      <div className="hidden md:block glass-panel rounded-3xl overflow-hidden border border-white border-opacity-5">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -100,7 +195,7 @@ const ManageUsers = () => {
             <tbody className="divide-y divide-white divide-opacity-5">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-10 text-center text-gray-500 font-bold uppercase text-xs">No users found</td>
+                  <td colSpan="5" className="p-10 text-center text-gray-500 font-bold uppercase text-xs">No users found</td>
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
@@ -110,7 +205,7 @@ const ManageUsers = () => {
                         {user.avatar?.url ? (
                           <img src={user.avatar.url} alt={user.name} className="h-10 w-10 rounded-full object-cover border border-white/10" />
                         ) : (
-                          <div className="h-10 w-10 bg-white/5 rounded-full flex items-center justify-center font-black text-xs">
+                          <div className="h-10 w-10 bg-white/5 rounded-full flex items-center justify-center font-black text-xs border border-white/5">
                             {user.name[0]}
                           </div>
                         )}

@@ -64,8 +64,17 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre('save', async function (next) {
+  // Clean up invalid location coordinates to prevent MongoDB 2dsphere index errors
+  if (this.location && (
+    !this.location.coordinates || 
+    this.location.coordinates.includes(null) || 
+    this.location.coordinates.some(val => val === null || isNaN(val))
+  )) {
+    this.location = undefined;
+  }
+
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

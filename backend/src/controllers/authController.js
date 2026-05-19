@@ -116,10 +116,34 @@ export const updateAvatar = async (req, res) => {
 // @desc    Update user profile
 export const updateProfile = async (req, res) => {
   try {
-    const fieldsToUpdate = { name: req.body.name, phone: req.body.phone, agencyName: req.body.agencyName };
-    if (req.body.location) {
-      fieldsToUpdate.location = { type: 'Point', coordinates: [req.body.location.lng, req.body.location.lat], address: req.body.location.address };
+    const fieldsToUpdate = { name: req.body.name, phone: req.body.phone };
+    
+    // Only dealers should have agencyName and location
+    const currentUser = await User.findById(req.user.id);
+    if (currentUser && currentUser.role === 'dealer') {
+      fieldsToUpdate.agencyName = req.body.agencyName;
+      
+      if (req.body.location && req.body.location.address) {
+        const lng = parseFloat(req.body.location.lng);
+        const lat = parseFloat(req.body.location.lat);
+        
+        if (!isNaN(lng) && !isNaN(lat)) {
+          fieldsToUpdate.location = {
+            type: 'Point',
+            coordinates: [lng, lat],
+            address: req.body.location.address
+          };
+        } else {
+          fieldsToUpdate.$unset = { location: 1 };
+        }
+      } else {
+        fieldsToUpdate.$unset = { location: 1 };
+      }
+    } else {
+      // For customers and admins, ensure location and agencyName are removed
+      fieldsToUpdate.$unset = { location: 1, agencyName: 1 };
     }
+
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, { new: true, runValidators: true });
     res.status(200).json({ success: true, data: user });
   } catch (error) {

@@ -65,16 +65,22 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSuccess(false)
-    const result = await dispatch(updateProfile({
+    
+    const updateData = {
       name: formData.name,
       phone: formData.phone,
-      agencyName: formData.agencyName,
-      location: {
+    }
+    
+    if (user?.role === 'dealer') {
+      updateData.agencyName = formData.agencyName;
+      updateData.location = {
         address: formData.address,
         lat: parseFloat(formData.lat),
         lng: parseFloat(formData.lng)
-      }
-    }))
+      };
+    }
+    
+    const result = await dispatch(updateProfile(updateData))
     
     if (updateProfile.fulfilled.match(result)) {
       setSuccess(true)

@@ -20,7 +20,7 @@ router
 router
   .route('/:id')
   .get(getBike)
-  .put(protect, authorize('dealer', 'admin'), updateBike)
+  .put(protect, authorize('dealer', 'admin'), upload.array('images', 10), updateBike)
   .delete(protect, authorize('dealer', 'admin'), deleteBike);
 
 export default router;

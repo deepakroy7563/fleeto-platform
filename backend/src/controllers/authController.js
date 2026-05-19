@@ -101,10 +101,14 @@ export const updateAvatar = async (req, res) => {
     user.avatar = result;
     await user.save();
 
-    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    if (process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your_api_key') {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    }
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    if (req.file && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your_api_key') {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };

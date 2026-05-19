@@ -1,0 +1,6 @@
+{
+  "appId": "com.fleeto.app",
+  "appName": "Fleeto",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

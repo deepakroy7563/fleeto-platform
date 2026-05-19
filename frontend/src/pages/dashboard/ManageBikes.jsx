@@ -10,6 +10,7 @@ const ManageBikes = () => {
   const [bikes, setBikes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     category: 'City',
@@ -40,13 +41,42 @@ const ManageBikes = () => {
 
   const fetchBikes = async () => {
     try {
-      const res = await api.get(user.role === 'dealer' ? `/bikes?dealer=${user.id}` : '/bikes')
+      const dealerId = user?._id || user?.id;
+      const res = await api.get(user.role === 'dealer' ? `/bikes?dealer=${dealerId}` : '/bikes')
       setBikes(res.data.data)
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEdit = (bike) => {
+    setEditingId(bike._id)
+    setFormData({
+      name: bike.name || '',
+      category: bike.category || 'City',
+      price: bike.price || '',
+      description: bike.description || '',
+      range: bike.specifications?.range || '',
+      topSpeed: bike.specifications?.topSpeed || '',
+      battery: bike.specifications?.battery || '',
+      chargingTime: bike.specifications?.chargingTime || '',
+      features: Array.isArray(bike.features) ? bike.features.join(', ') : (bike.features || ''),
+      images: { front: null, back: null, left: null, right: null }
+    })
+    
+    const initialPreviews = { front: null, back: null, left: null, right: null }
+    if (bike.images && bike.images.length > 0) {
+      bike.images.forEach((img, index) => {
+        if (index === 0) initialPreviews.front = img.url
+        if (index === 1) initialPreviews.back = img.url
+        if (index === 2) initialPreviews.left = img.url
+        if (index === 3) initialPreviews.right = img.url
+      })
+    }
+    setPreviews(initialPreviews)
+    setShowModal(true)
   }
 
   const handleSubmit = async (e) => {
@@ -72,10 +102,17 @@ const ManageBikes = () => {
       if (formData.images.left) formDataToSend.append('images', formData.images.left)
       if (formData.images.right) formDataToSend.append('images', formData.images.right)
 
-      await api.post('/bikes', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      if (editingId) {
+        await api.put(`/bikes/${editingId}`, formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+      } else {
+        await api.post('/bikes', formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+      }
       
+      setEditingId(null)
       setShowModal(false)
       setFormData({
         name: '', category: 'City', price: '', description: '',
@@ -116,7 +153,16 @@ const ManageBikes = () => {
         </div>
         {user.role === 'dealer' && (
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingId(null)
+              setFormData({
+                name: '', category: 'City', price: '', description: '',
+                range: '', topSpeed: '', battery: '', chargingTime: '',
+                features: '', images: { front: null, back: null, left: null, right: null }
+              })
+              setPreviews({ front: null, back: null, left: null, right: null })
+              setShowModal(true)
+            }}
             className="bg-electricGreen text-black font-black px-8 py-4 rounded-2xl flex items-center space-x-3 hover:scale-105 transition-transform"
           >
             <Plus className="h-5 w-5" />
@@ -145,7 +191,7 @@ const ManageBikes = () => {
               <div className="flex items-center space-x-2">
                 {user.role === 'dealer' && (
                   <>
-                    <button className="flex-grow flex items-center justify-center space-x-2 bg-white bg-opacity-5 hover:bg-opacity-10 p-3 rounded-xl transition-all">
+                    <button onClick={() => handleEdit(bike)} className="flex-grow flex items-center justify-center space-x-2 bg-white bg-opacity-5 hover:bg-opacity-10 p-3 rounded-xl transition-all">
                       <Edit className="h-4 w-4" />
                       <span className="text-xs font-bold">Edit</span>
                     </button>
@@ -177,7 +223,7 @@ const ManageBikes = () => {
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
              <motion.div 
                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-               onClick={() => setShowModal(false)}
+               onClick={() => { setShowModal(false); setEditingId(null); }}
                className="absolute inset-0 bg-black/90 backdrop-blur-md"
              />
              <motion.div
@@ -186,7 +232,7 @@ const ManageBikes = () => {
                exit={{ opacity: 0, scale: 0.9, y: 20 }}
                className="relative bg-darkBg border border-white border-opacity-10 p-10 rounded-[3rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto"
              >
-               <h2 className="text-3xl font-black mb-10 uppercase">Register New Bike</h2>
+               <h2 className="text-3xl font-black mb-10 uppercase">{editingId ? 'Edit Bike Details' : 'Register New Bike'}</h2>
                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <input 
@@ -267,8 +313,8 @@ const ManageBikes = () => {
                       </div>
                     </div>
                     <div className="pt-10 flex space-x-4">
-                      <button type="button" onClick={() => setShowModal(false)} className="flex-grow p-4 rounded-xl border border-white/10 font-bold hover:bg-white/5">Cancel</button>
-                      <button type="submit" className="flex-grow p-4 rounded-xl bg-electricGreen text-black font-black">Save Model</button>
+                      <button type="button" onClick={() => { setShowModal(false); setEditingId(null); }} className="flex-grow p-4 rounded-xl border border-white/10 font-bold hover:bg-white/5">Cancel</button>
+                      <button type="submit" className="flex-grow p-4 rounded-xl bg-electricGreen text-black font-black">{editingId ? 'Save Changes' : 'Save Model'}</button>
                     </div>
                   </div>
                </form>

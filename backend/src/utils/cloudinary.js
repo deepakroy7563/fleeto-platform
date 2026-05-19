@@ -10,6 +10,10 @@ cloudinary.config({
 });
 
 export const uploadSingle = async (file, folder = 'fleeto/avatars') => {
+  if (!process.env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY === 'your_api_key') {
+    return { url: `${process.env.BACKEND_URL || 'http://localhost:5000'}/uploads/${file.filename}`, public_id: file.filename };
+  }
+
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload(
       file.path,
@@ -23,6 +27,10 @@ export const uploadSingle = async (file, folder = 'fleeto/avatars') => {
 };
 
 export const uploadMultiple = async (files) => {
+  if (!process.env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY === 'your_api_key') {
+    return files.map(file => ({ url: `${process.env.BACKEND_URL || 'http://localhost:5000'}/uploads/${file.filename}`, public_id: file.filename }));
+  }
+
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {
       cloudinary.uploader.upload(

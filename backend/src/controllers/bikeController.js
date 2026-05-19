@@ -83,9 +83,11 @@ export const createBike = async (req, res) => {
       req.body.images = uploadedImages;
       
       // Cleanup local files
-      req.files.forEach(file => {
-        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      });
+      if (process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your_api_key') {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        });
+      }
     }
 
     if (typeof req.body.specifications === 'string') {
@@ -98,7 +100,7 @@ export const createBike = async (req, res) => {
     const bike = await Bike.create(req.body);
     res.status(201).json({ success: true, data: bike });
   } catch (error) {
-    if (req.files) {
+    if (req.files && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your_api_key') {
       req.files.forEach(file => {
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       });
@@ -115,9 +117,34 @@ export const updateBike = async (req, res) => {
     if (bike.dealer.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
+    let uploadedImages = bike.images || [];
+
+    if (req.files && req.files.length > 0) {
+      uploadedImages = await uploadMultiple(req.files);
+      if (process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your_api_key') {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        });
+      }
+    }
+
+    if (req.body.specifications && typeof req.body.specifications === 'string') {
+      req.body.specifications = JSON.parse(req.body.specifications);
+    }
+    if (req.body.features && typeof req.body.features === 'string') {
+      req.body.features = req.body.features.split(',').map(f => f.trim());
+    }
+
+    req.body.images = uploadedImages;
+
     bike = await Bike.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     res.status(200).json({ success: true, data: bike });
   } catch (error) {
+    if (req.files && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== 'your_api_key') {
+      req.files.forEach(file => {
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      });
+    }
     res.status(400).json({ success: false, message: error.message });
   }
 };

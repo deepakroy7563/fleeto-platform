@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { login, register, clearError } from '../features/auth/authSlice'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Zap, Mail, Lock, User, Phone, Briefcase } from 'lucide-react'
+import { Zap, Mail, Lock, User, Phone, Briefcase, Eye, EyeOff } from 'lucide-react'
 
 const Auth = ({ mode = 'login' }) => {
   const [formData, setFormData] = useState({
@@ -17,6 +17,7 @@ const Auth = ({ mode = 'login' }) => {
     lat: '',
     lng: ''
   })
+  const [showPassword, setShowPassword] = useState(false)
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -161,12 +162,19 @@ const Auth = ({ mode = 'login' }) => {
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
             <input
               required
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
-              className="w-full bg-darkBg-lighter border border-white border-opacity-10 rounded-xl py-4 pl-12 pr-4 focus:border-electricGreen outline-none transition-all font-bold"
+              className="w-full bg-darkBg-lighter border border-white border-opacity-10 rounded-xl py-4 pl-12 pr-12 focus:border-electricGreen outline-none transition-all font-bold"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
 
           {mode === 'login' && (

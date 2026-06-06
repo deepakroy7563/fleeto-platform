@@ -7,15 +7,18 @@ import {
   updateProfile,
   updateAvatar,
   forgotPassword,
-  resetPassword 
+  resetPassword,
+  verifyEmail,
+  resendVerification
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
+import { loginLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
 router.post('/register', register);
-router.post('/login', login);
+router.post('/login', loginLimiter, login);
 router.get('/logout', protect, logout);
 router
   .route('/profile')
@@ -25,5 +28,7 @@ router
 router.put('/avatar', protect, upload.single('avatar'), updateAvatar);
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
+router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerification);
 
 export default router;

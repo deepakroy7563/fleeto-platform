@@ -10,6 +10,11 @@ import sendEmail from '../utils/sendEmail.js';
 export const register = async (req, res) => {
   try {
     const { name, email, password, role, phone, agencyName, address, lat, lng } = req.body;
+    
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ success: false, message: 'Please provide all required fields (name, email, password, phone)' });
+    }
+
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ success: false, message: 'User already exists' });
 
@@ -19,6 +24,16 @@ export const register = async (req, res) => {
       address
     } : undefined;
 
+    // Generate secure verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    
+    // Hash token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
     const user = await User.create({ 
       name, 
       email, 
@@ -27,9 +42,40 @@ export const register = async (req, res) => {
       phone, 
       agencyName: role === 'dealer' ? agencyName : undefined, 
       location,
-      isApproved: role === 'customer' || role === 'admin' ? true : false 
+      isApproved: role === 'customer' || role === 'admin' ? true : false,
+      isVerified: false,
+      verificationToken: hashedToken,
+      verificationTokenExpiry
     });
-    sendTokenResponse(user, 201, res);
+
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('EMAIL VERIFICATION URL:', verificationUrl);
+    }
+
+    const emailMessage = `Welcome to Fleeto! Please verify your email by clicking the link below:\n\n${verificationUrl}\n\nThis link will expire in 24 hours.`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Verify Your Fleeto Account',
+        message: emailMessage,
+      });
+
+      res.status(201).json({ 
+        success: true, 
+        message: 'Registration successful! A verification email has been sent. Please verify your email to log in.',
+        email: user.email 
+      });
+    } catch (err) {
+      console.error('Nodemailer verification email error:', err);
+      res.status(201).json({ 
+        success: true, 
+        message: 'Registration successful, but there was an error sending the verification email. You can try resending the link.',
+        email: user.email 
+      });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -57,6 +103,15 @@ export const login = async (req, res) => {
     if (!isMatch) {
       console.log(`Login Failed: Incorrect password for ${email}`);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      console.log(`Login Failed: User ${email} is NOT verified`);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Please verify your email address to log in' 
+      });
     }
 
     // Check if user is approved
@@ -254,6 +309,96 @@ export const resetPassword = async (req, res, next) => {
     await user.save();
 
     sendTokenResponse(user, 200, res);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify email address
+// @route   GET /api/auth/verify-email/:token
+// @access  Public
+export const verifyEmail = async (req, res) => {
+  try {
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      verificationToken: hashedToken,
+      verificationTokenExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired email verification link' });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Email verified successfully! You can now log in.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+export const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please provide an email address' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account found with this email' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, message: 'This account has already been verified. Please log in.' });
+    }
+
+    // Generate new secure verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    
+    // Hash token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
+    user.verificationToken = hashedToken;
+    user.verificationTokenExpiry = verificationTokenExpiry;
+    await user.save();
+
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('RESENT EMAIL VERIFICATION URL:', verificationUrl);
+    }
+
+    const emailMessage = `Please verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis link will expire in 24 hours.`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Verify Your Fleeto Account (Resent Link)',
+        message: emailMessage,
+      });
+
+      res.status(200).json({ success: true, message: 'Verification link has been sent to your email.' });
+    } catch (err) {
+      console.error('Nodemailer resend verification error:', err);
+      res.status(500).json({ success: false, message: 'Email could not be sent. Please try again later.' });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

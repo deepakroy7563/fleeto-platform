@@ -17,6 +17,7 @@ import DealerLocator from './pages/DealerLocator'
 import Auth from './pages/Auth'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
@@ -51,6 +52,7 @@ function App() {
         <Route path="register" element={<Auth mode="register" />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password/:token" element={<ResetPassword />} />
+        <Route path="verify-email/:token" element={<VerifyEmail />} />
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute allowedRoles={['dealer', 'admin']} />}>

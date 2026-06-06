@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { login, register, clearError } from '../features/auth/authSlice'
+import { login, register, clearError, resendVerification, clearVerificationPending } from '../features/auth/authSlice'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Zap, Mail, Lock, User, Phone, Briefcase, Eye, EyeOff } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 const Auth = ({ mode = 'login' }) => {
   const [formData, setFormData] = useState({
@@ -18,10 +19,11 @@ const Auth = ({ mode = 'login' }) => {
     lng: ''
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth)
+  const { loading, error, isAuthenticated, user, verificationPending, pendingEmail } = useSelector((state) => state.auth)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -32,6 +34,19 @@ const Auth = ({ mode = 'login' }) => {
     return () => dispatch(clearError())
   }, [isAuthenticated, user, navigate, dispatch])
 
+  // Clear verification pending state when switching between login and register
+  useEffect(() => {
+    dispatch(clearVerificationPending())
+  }, [mode, dispatch])
+
+  // Cooldown timer logic for resending emails
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [cooldown])
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (mode === 'login') {
@@ -39,6 +54,69 @@ const Auth = ({ mode = 'login' }) => {
     } else {
       dispatch(register(formData))
     }
+  }
+
+  const handleResend = async () => {
+    if (cooldown > 0) return
+    try {
+      const resultAction = await dispatch(resendVerification(pendingEmail))
+      if (resendVerification.fulfilled.match(resultAction)) {
+        toast.success('Verification email sent successfully!')
+        setCooldown(60)
+      } else {
+        toast.error(resultAction.payload || 'Failed to resend verification email')
+      }
+    } catch (err) {
+      toast.error('An error occurred. Please try again.')
+    }
+  }
+
+  if (verificationPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20 px-4">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-electricGreen opacity-10 blur-[120px] rounded-full"></div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 w-full max-w-md glass-panel p-10 rounded-[3rem] border border-white border-opacity-10 text-center"
+        >
+          <div className="inline-flex items-center justify-center h-20 w-20 bg-electricGreen/10 rounded-full mb-6 text-electricGreen animate-pulse">
+            <Mail className="h-10 w-10" />
+          </div>
+          
+          <h2 className="text-3xl font-black uppercase mb-4">Verify Your Email</h2>
+          <p className="text-gray-400 font-bold mb-6">
+            We have sent a verification link to your email address:
+          </p>
+          <div className="bg-white/5 border border-white/10 rounded-2xl py-3 px-4 mb-8 text-electricGreen font-mono font-bold break-all text-sm">
+            {pendingEmail}
+          </div>
+          <p className="text-xs text-gray-500 mb-8 font-bold leading-relaxed">
+            Please check your inbox (including your spam folder) and click the link to activate your account. The link will expire in 24 hours.
+          </p>
+
+          <div className="space-y-4">
+            <button
+              onClick={handleResend}
+              disabled={loading || cooldown > 0}
+              className="w-full bg-electricGreen text-black font-black py-4 rounded-xl text-base hover:bg-electricGreen-dark transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+            >
+              {cooldown > 0 ? `RESEND EMAIL IN ${cooldown}S` : 'RESEND VERIFICATION EMAIL'}
+            </button>
+
+            <button
+              onClick={() => dispatch(clearVerificationPending())}
+              className="w-full bg-white/5 text-white font-black py-4 rounded-xl text-base hover:bg-white/10 transition-all border border-white/5"
+            >
+              BACK TO LOGIN
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
   }
 
   return (
@@ -99,8 +177,8 @@ const Auth = ({ mode = 'login' }) => {
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 >
-                  <option value="customer">Customer</option>
-                  <option value="dealer">Dealer</option>
+                  <option value="customer">Buyer (Customer)</option>
+                  <option value="dealer">Seller (Dealer)</option>
                 </select>
               </div>
               {formData.role === 'dealer' && (
@@ -133,7 +211,9 @@ const Auth = ({ mode = 'login' }) => {
                       if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition((pos) => {
                           setFormData({ ...formData, lat: pos.coords.latitude, lng: pos.coords.longitude })
-                          alert("Location coordinates captured!")
+                          toast.success("Location coordinates captured!")
+                        }, (err) => {
+                          toast.error("Could not capture location. Please try again.")
                         })
                       }
                     }}

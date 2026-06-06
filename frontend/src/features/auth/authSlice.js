@@ -16,12 +16,18 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
 export const register = createAsyncThunk('auth/register', async (userData, { rejectWithValue }) => {
   try {
     const response = await api.post('/auth/register', userData);
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-    }
-    return response.data.user;
+    return response.data;
   } catch (error) {
     return rejectWithValue(error.response.data.message || 'Registration failed');
+  }
+});
+
+export const resendVerification = createAsyncThunk('auth/resendVerification', async (email, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/auth/resend-verification', { email });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response.data.message || 'Failed to resend verification link');
   }
 });
 
@@ -59,6 +65,8 @@ const initialState = {
   isAuthenticated: false,
   loading: false,
   error: null,
+  verificationPending: false,
+  pendingEmail: null,
 };
 
 const authSlice = createSlice({
@@ -73,6 +81,10 @@ const authSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    clearVerificationPending: (state) => {
+      state.verificationPending = false;
+      state.pendingEmail = null;
     },
   },
   extraReducers: (builder) => {
@@ -94,10 +106,22 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.isAuthenticated = true;
-        state.user = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.verificationPending = true;
+        state.pendingEmail = action.payload.email;
       })
       .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(resendVerification.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(resendVerification.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(resendVerification.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -134,5 +158,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, clearVerificationPending } = authSlice.actions;
 export default authSlice.reducer;

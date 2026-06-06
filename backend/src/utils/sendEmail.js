@@ -1,7 +1,11 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
-  if (!process.env.SMTP_HOST || process.env.SMTP_EMAIL === 'your_email_here') {
+  if (
+    !process.env.SMTP_HOST ||
+    process.env.SMTP_EMAIL === 'your_email_here' ||
+    process.env.SMTP_EMAIL === 'your_email'
+  ) {
     console.log('--- EMAIL SIMULATION (SMTP Not Configured) ---');
     console.log('To:', options.email);
     console.log('Subject:', options.subject);
